@@ -44,7 +44,7 @@ class NeuralNet:
         return np.array(new_X)
     
     def _get_data(self, data_type):
-        x, y, size = self.dataset.MiniBatch(-1, data_type)
+        x, y, size = self.dataset.MiniBatch(data_type)
         x = self._processX(x, size)
         x = x.reshape((size, 100, 205, 1))
         y = y.reshape((size,))
@@ -85,22 +85,29 @@ class NeuralNet:
     def BuildModel(self):
         self.model = Sequential()
 
-        self.model.add(Conv2D(16, kernel_size=7, padding='same', strides=(2,2), activation='relu', input_shape=(100,205,1)))
-        self.model.add(BatchNormalization())
-        self.model.add(MaxPooling2D(strides=2))
+        # self.model.add(Conv2D(16, kernel_size=7, padding='same', strides=(2,2), activation='relu', input_shape=(100,205,1)))
+        # self.model.add(BatchNormalization())
+        # self.model.add(MaxPooling2D(strides=2))
 
-        self.model.add(Conv2D(32, kernel_size=7, padding='same', activation='relu'))
-        self.model.add(BatchNormalization())
-        self.model.add(MaxPooling2D(strides=2))
+        # self.model.add(Conv2D(32, kernel_size=7, padding='same', activation='relu'))
+        # self.model.add(BatchNormalization())
+        # self.model.add(MaxPooling2D(strides=2))
         
-        self.model.add(Conv2D(64, kernel_size=7, padding='same', activation='relu'))
-        self.model.add(BatchNormalization())
-        self.model.add(MaxPooling2D(strides=2))
+        # self.model.add(Conv2D(64, kernel_size=7, padding='same', activation='relu'))
+        # self.model.add(BatchNormalization())
+        # self.model.add(MaxPooling2D(strides=2))
         
-        self.model.add(Conv2D(128, kernel_size=7, padding='same', activation='relu'))
-        self.model.add(BatchNormalization())
-        self.model.add(MaxPooling2D(strides=2))
+        # self.model.add(Conv2D(128, kernel_size=7, padding='same', activation='relu'))
+        # self.model.add(BatchNormalization())
+        # self.model.add(MaxPooling2D(strides=2))
 
+        # self.model.add(Conv2D(256, kernel_size=5, padding='same', activation='relu'))
+        # self.model.add(BatchNormalization())
+        # self.model.add(MaxPooling2D(strides=2))
+
+        self.model.add(Conv2D(128, kernel_size=7, padding='same', strides=(2,2), activation='relu', input_shape=(100,205,1)))
+        self.model.add(BatchNormalization())
+        self.model.add(MaxPooling2D(strides=2))
         self.model.add(Conv2D(256, kernel_size=5, padding='same', activation='relu'))
         self.model.add(BatchNormalization())
         self.model.add(MaxPooling2D(strides=2))
@@ -108,8 +115,8 @@ class NeuralNet:
         self.model.add(Flatten())
         self.model.add(Dense(256, activation='relu'))
         self.model.add(Dense(256, activation='relu'))
-        self.model.add(Dense(256, activation='relu'))
-        #self.model.add(Dense(1024, activation='relu'))
+        # self.model.add(Dense(256, activation='relu'))
+        self.model.add(Dense(512, activation='relu'))
         self.model.add(Dense(1, activation='relu'))
 
         self.model.compile(loss='mean_squared_error', optimizer='adam')
@@ -139,8 +146,12 @@ class NeuralNet:
         predic_str = "Train: " + str(predic1) + "\tVal: " +  str(predic2)  + "\tTest: " + str(predic3) + "\n"
         print(predic_str)
 
-        self._write_to_file([["Train","Validation", "Test"],accuracy, [predic1, predic2, predic3], ["Actual", "Predicted"]])
-        self._write_to_file(np.transpose([np.array(y_train.tolist()+y_val.tolist()+y_test.tolist()), 
+        self._write_to_file([["Train","Validation", "Test"],accuracy, [predic1, predic2, predic3], ["Index","Actual", "Predicted"]])
+        # self._write_to_file(np.transpose([np.array(y_train.tolist()+y_val.tolist()+y_test.tolist()), 
+        #     np.array(prediction[0].tolist() + prediction[1].tolist() + prediction[2].tolist())]))
+        self._write_to_file(np.transpose([
+            np.array(self.dataset.Train_seq + self.dataset.Val_seq + self.dataset.Test_seq),
+            np.array(y_train.tolist()+y_val.tolist()+y_test.tolist()), 
             np.array(prediction[0].tolist() + prediction[1].tolist() + prediction[2].tolist())]))
 
     def save(self):
@@ -149,15 +160,15 @@ class NeuralNet:
 
 
 if __name__ == "__main__":
-    dataset_perm = [[60,20,20],[70,20,10],[80,10,10],[85,10,5]]
-    batch_size = [5,10,20,50]
-    #dataset_perm = [[70,20,10]]
-    #batch_size = [20]
+    #dataset_perm = [[60,20,20],[70,20,10],[80,10,10],[85,10,5]]
+    #batch_size = [5,10,20,50]
+    dataset_perm = [[60,20,20]]
+    batch_size = [20]
     for dp in dataset_perm:
         for batchsize in batch_size:
             filename = str(datetime.now()) + "_".join([str(t) for t in dp]) + "_Batch_" + str(batchsize)
             nn = NeuralNet(dp, filename)
             nn.BuildModel()
-            nn.TrainModel(epochs=200,batch_size=batchsize)
+            nn.TrainModel(epochs=1,batch_size=batchsize)
             nn.save()
             del nn

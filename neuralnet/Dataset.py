@@ -44,19 +44,13 @@ class Dataset:
         print("Loaded!")
         print("Size:", len(self.Train_seq), len(self.Val_seq), len(self.Test_seq))
 
-    def MiniBatch(self, size, type='train'):
+    def MiniBatch(self, type='train'):
         if type == 'train':
-            if size == -1:
-                size = len(self.Train_seq)
-            self.indexes = [self.Train_seq[s] for s in random.sample(range(0,len(self.Train_seq)), size)]
+            self.indexes = self.Train_seq
         elif type == 'val':
-            if size == -1:
-                size = len(self.Val_seq)
-            self.indexes = [self.Val_seq[s] for s in random.sample(range(0,len(self.Val_seq)), size)]
+            self.indexes = self.Val_seq
         elif type == 'test':
-            if size == -1:
-                size = len(self.Test_seq)
-            self.indexes = [self.Test_seq[s] for s in random.sample(range(0,len(self.Test_seq)), size)]
+            self.indexes = self.Test_seq
         else:
             print("Type not supported ", type)
             exit(-1)
