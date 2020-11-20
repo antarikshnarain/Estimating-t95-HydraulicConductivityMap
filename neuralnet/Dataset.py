@@ -9,11 +9,16 @@ import glob
 import random
 from copy import deepcopy
 
+ROOT_PATH = "dataset/"
+
 class Dataset:
     def __init__(self):
         pass
     
     def LoadData(self, input_datafile_format, output_datafile_format, split_by):
+        # Updating Path to dataset
+        input_datafile_format = ROOT_PATH + input_datafile_format
+        output_datafile_format = ROOT_PATH + output_datafile_format
         split = deepcopy(split_by)
         print("Loading Dataset...")
         input_list = glob.glob(input_datafile_format)
@@ -26,8 +31,8 @@ class Dataset:
         self.Y = np.array(pd.concat([pd.read_csv(f) for f in output_list], axis=0))
         assert(self.X.shape[1] == self.Y.shape[0])
         self.TotalSamples = self.X.shape[1]
-        #seq = random.sample(range(0,self.TotalSamples), self.TotalSamples)
-        seq = range(0, self.TotalSamples)
+        seq = random.sample(range(0,self.TotalSamples), self.TotalSamples)
+        #seq = range(0, self.TotalSamples)
         total_rec = 0
         for i,_ in enumerate(split):
             split[i] = total_rec + int(split[i]*self.TotalSamples/100)
