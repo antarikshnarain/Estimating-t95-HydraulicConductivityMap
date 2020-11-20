@@ -1,0 +1,3 @@
+dataset/*
+neuralnet/__pycache__/*
+*.csv
