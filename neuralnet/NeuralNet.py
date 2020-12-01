@@ -14,6 +14,8 @@ import keras
 import tensorflow as tf
 import numpy as np
 
+from scipy.stats import pearsonr
+
 import csv
 import os
 
@@ -62,7 +64,10 @@ class NeuralNet:
 
     def _check_predictions(self, X, Y):
         y_p = self.model.predict(X)
-        diff = y_p.reshape(y_p.shape[0],) - Y
+        y_p = y_p.reshape(y_p.shape[0],)
+        corr, _ = pearsonr(Y, y_p.reshape(y_p.shape[0],))
+        print("Pearson Score: %.3f"%corr)
+        diff = y_p - Y
         ct_p = 0
         ct_n = 0
         ct_0 = 0
@@ -82,35 +87,37 @@ class NeuralNet:
         f.close()
         print("Performance data written to CSV")
 
-    def BuildModel(self):
+    def BuildModel(self, mode=False):
         self.model = Sequential()
 
-        # self.model.add(Conv2D(16, kernel_size=7, padding='same', strides=(2,2), activation='relu', input_shape=(100,205,1)))
-        # self.model.add(BatchNormalization())
-        # self.model.add(MaxPooling2D(strides=2))
+        if mode: 
+            self.model.add(Conv2D(16, kernel_size=7, padding='same', strides=(2,2), activation='relu', input_shape=(100,205,1)))
+            self.model.add(BatchNormalization())
+            self.model.add(MaxPooling2D(strides=2))
 
-        # self.model.add(Conv2D(32, kernel_size=7, padding='same', activation='relu'))
-        # self.model.add(BatchNormalization())
-        # self.model.add(MaxPooling2D(strides=2))
-        
-        # self.model.add(Conv2D(64, kernel_size=7, padding='same', activation='relu'))
-        # self.model.add(BatchNormalization())
-        # self.model.add(MaxPooling2D(strides=2))
-        
-        # self.model.add(Conv2D(128, kernel_size=7, padding='same', activation='relu'))
-        # self.model.add(BatchNormalization())
-        # self.model.add(MaxPooling2D(strides=2))
+            self.model.add(Conv2D(32, kernel_size=7, padding='same', activation='relu'))
+            self.model.add(BatchNormalization())
+            self.model.add(MaxPooling2D(strides=2))
+            
+            self.model.add(Conv2D(64, kernel_size=7, padding='same', activation='relu'))
+            self.model.add(BatchNormalization())
+            self.model.add(MaxPooling2D(strides=2))
+            
+            self.model.add(Conv2D(128, kernel_size=7, padding='same', activation='relu'))
+            self.model.add(BatchNormalization())
+            self.model.add(MaxPooling2D(strides=2))
 
-        # self.model.add(Conv2D(256, kernel_size=5, padding='same', activation='relu'))
-        # self.model.add(BatchNormalization())
-        # self.model.add(MaxPooling2D(strides=2))
+            self.model.add(Conv2D(256, kernel_size=5, padding='same', activation='relu'))
+            self.model.add(BatchNormalization())
+            self.model.add(MaxPooling2D(strides=2))
 
-        self.model.add(Conv2D(128, kernel_size=7, padding='same', strides=(2,2), activation='relu', input_shape=(100,205,1)))
-        self.model.add(BatchNormalization())
-        self.model.add(MaxPooling2D(strides=2))
-        self.model.add(Conv2D(256, kernel_size=5, padding='same', activation='relu'))
-        self.model.add(BatchNormalization())
-        self.model.add(MaxPooling2D(strides=2))
+        else:
+            self.model.add(Conv2D(128, kernel_size=7, padding='same', strides=(2,2), activation='relu', input_shape=(100,205,1)))
+            self.model.add(BatchNormalization())
+            self.model.add(MaxPooling2D(strides=2))
+            self.model.add(Conv2D(256, kernel_size=5, padding='same', activation='relu'))
+            self.model.add(BatchNormalization())
+            self.model.add(MaxPooling2D(strides=2))
 
         self.model.add(Flatten())
         self.model.add(Dense(256, activation='relu'))
@@ -118,8 +125,8 @@ class NeuralNet:
         # self.model.add(Dense(256, activation='relu'))
         self.model.add(Dense(512, activation='relu'))
         self.model.add(Dense(1, activation='relu'))
-
-        self.model.compile(loss='mean_squared_error', optimizer='adam')
+        #self.model.compile(loss='mean_squared_error', optimizer='adam')
+        self.model.compile(loss='mean_absolute_percentage_error', optimizer='adam')
         self.model.summary()
         plot_model(self.model, to_file="model.png")
    
@@ -143,8 +150,8 @@ class NeuralNet:
         predic1 = self._check_predictions(x_train, y_train)
         predic2 = self._check_predictions(x_val, y_val)
         predic3 = self._check_predictions(x_test, y_test)
-        predic_str = "Train: " + str(predic1) + "\tVal: " +  str(predic2)  + "\tTest: " + str(predic3) + "\n"
-        print(predic_str)
+        #predic_str = "Train: " + str(predic1) + "\tVal: " +  str(predic2)  + "\tTest: " + str(predic3) + "\n"
+        #print(predic_str)
 
         self._write_to_file([["Train","Validation", "Test"],accuracy, [predic1, predic2, predic3], ["Index","Actual", "Predicted"]])
         # self._write_to_file(np.transpose([np.array(y_train.tolist()+y_val.tolist()+y_test.tolist()), 
@@ -164,11 +171,16 @@ if __name__ == "__main__":
     #batch_size = [5,10,20,50]
     dataset_perm = [[60,20,20]]
     batch_size = [20]
+    modes = [True]
+    #modes =[True, False]
     for dp in dataset_perm:
         for batchsize in batch_size:
-            filename = str(datetime.now()) + "_".join([str(t) for t in dp]) + "_Batch_" + str(batchsize)
-            nn = NeuralNet(dp, filename)
-            nn.BuildModel()
-            nn.TrainModel(epochs=1,batch_size=batchsize)
-            nn.save()
-            del nn
+            for mode in modes:
+                filename = str(datetime.now()) + "_"+ str(mode) + "_".join([str(t) for t in dp]) + "_Batch_" + str(batchsize)
+                nn = NeuralNet(dp, filename)
+                nn.BuildModel(mode)
+                for i in range(5):
+                    print("===========1================")
+                    nn.TrainModel(epochs=20,batch_size=batchsize)
+                nn.save()
+                del nn
