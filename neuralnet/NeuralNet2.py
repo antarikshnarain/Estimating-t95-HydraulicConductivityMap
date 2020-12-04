@@ -78,7 +78,7 @@ class NeuralNet:
                 ct_n+=1
             else:
                 ct_0+=1
-        return ct_p, ct_n, ct_0
+        return ct_p, ct_n, ct_0, corr
     
     def _write_to_file(self, rows):
         f = open(PERF_PATH + self.filename + ".csv", "a")
@@ -131,7 +131,7 @@ class NeuralNet:
         plot_model(self.model, to_file="model.png")
    
     
-    def TrainModel(self, epochs, batch_size=10):
+    def TrainModel(self, epochs, batch_size=10, max_iteration = 20):
         x_train, y_train = self._get_data('train')
         x_val, y_val = self._get_data('val')
         x_test, y_test = self._get_data('test')
@@ -139,27 +139,41 @@ class NeuralNet:
         # self.viz.save("map_1197.png")
         
         checkpoint = ModelCheckpoint(MODEL_PATH + self.filename + ".hdf5", monitor='loss', verbose=1, save_best_only=True, mode='auto', period=5)
-
-        self.model.fit(x_train, y_train, epochs=epochs, batch_size=batch_size, verbose=1, validation_data=(x_val, y_val), callbacks=checkpoint)
+        old_predic = np.Inf
+        ctr = 0
+        eps = int(epochs / max_iteration)
+        for itr in range(max_iteration):
+            print("Running Iteration ", itr)
+            self.model.fit(x_train, y_train, epochs=eps, batch_size=batch_size, verbose=0, validation_data=(x_val, y_val), callbacks=checkpoint)
         
-        print("\n\nEvaluating Models")
-        accuracy = self._accuracy([x_train, x_val, x_test], [y_train, y_val, y_test])
-        print("Accuracy: Train->%.2f | Val->%.2f | Test->%.2f\n"%(accuracy[0], accuracy[1], accuracy[2]))
-        print("\n\nPredictions")
-        prediction = self._prediction([x_train, x_val, x_test], [y_train, y_val, y_test])
-        predic1 = self._check_predictions(x_train, y_train)
-        predic2 = self._check_predictions(x_val, y_val)
-        predic3 = self._check_predictions(x_test, y_test)
-        #predic_str = "Train: " + str(predic1) + "\tVal: " +  str(predic2)  + "\tTest: " + str(predic3) + "\n"
-        #print(predic_str)
+            print("\n\nEvaluating Models")
+            accuracy = self._accuracy([x_train, x_val, x_test], [y_train, y_val, y_test])
+            print("Accuracy: Train->%.2f | Val->%.2f | Test->%.2f\n"%(accuracy[0], accuracy[1], accuracy[2]))
+            print("\n\nPredictions")
+            prediction = self._prediction([x_train, x_val, x_test], [y_train, y_val, y_test])
+            predic1 = self._check_predictions(x_train, y_train)
+            predic2 = self._check_predictions(x_val, y_val)
+            predic3 = self._check_predictions(x_test, y_test)
 
-        self._write_to_file([["Train","Validation", "Test"],accuracy, [predic1, predic2, predic3], ["Index","Actual", "Predicted"]])
+            self._write_to_file([["Train","Validation", "Test"],accuracy, [predic1, predic2, predic3], ["Index","Actual", "Predicted"]])
+
+            if old_predic > predic2[3]:
+                old_predic = predic2[3]
+                ctr=0
+                self.save()
+            else:
+                if ctr == 3:
+                    print("Breaking Early!", old_predic, predic2[3])
+                    break
+                ctr += 1
+                #old_predic = predic2[3]
+
         # self._write_to_file(np.transpose([np.array(y_train.tolist()+y_val.tolist()+y_test.tolist()), 
         #     np.array(prediction[0].tolist() + prediction[1].tolist() + prediction[2].tolist())]))
-        self._write_to_file(np.transpose([
-            np.array(self.dataset.Train_seq + self.dataset.Val_seq + self.dataset.Test_seq),
-            np.array(y_train.tolist()+y_val.tolist()+y_test.tolist()), 
-            np.array(prediction[0].tolist() + prediction[1].tolist() + prediction[2].tolist())]))
+        # self._write_to_file(np.transpose([
+        #     np.array(self.dataset.Train_seq + self.dataset.Val_seq + self.dataset.Test_seq),
+        #     np.array(y_train.tolist()+y_val.tolist()+y_test.tolist()), 
+        #     np.array(prediction[0].tolist() + prediction[1].tolist() + prediction[2].tolist())]))
 
     def save(self):
         self.model.save(TRAINED_PATH + filename + ".hdf5")
@@ -168,21 +182,17 @@ class NeuralNet:
 
 if __name__ == "__main__":
     #dataset_perm = [[60,20,20],[70,20,10],[80,10,10],[85,10,5]]
-    #batch_size = [5,10,20,50]
+    batch_size = [5,10,20,50]
     dataset_perm = [[60,20,20]]
-    batch_size = [20]
-    modes =[True, False]
+    #batch_size = [20]
+    modes = [True]
+    #modes =[True, False]
     for dp in dataset_perm:
         for batchsize in batch_size:
             for mode in modes:
                 filename = str(datetime.now()) + "_"+ str(mode) + "_".join([str(t) for t in dp]) + "_Batch_" + str(batchsize)
                 nn = NeuralNet(dp, filename)
                 nn.BuildModel(mode)
-                print("===========1================")
-                nn.TrainModel(epochs=20,batch_size=batchsize)
-                print("===========2================")
-                nn.TrainModel(epochs=20,batch_size=batchsize)
-                print("===========3================")
-                nn.TrainModel(epochs=20,batch_size=batchsize)
+                nn.TrainModel(epochs=200,batch_size=batchsize,max_iteration=20)
                 nn.save()
                 del nn
