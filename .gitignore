@@ -1,3 +1,6 @@
 dataset/*
 neuralnet/__pycache__/*
 *.csv
+model/*
+weights/*
+performance/*

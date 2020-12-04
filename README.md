@@ -1,4 +1,4 @@
-# Estimating-t95-HydraulicConductivityMap
+# Estimating Late Arrival Time for a Hydraulic Conductivity Map
 
 Exploring different techniques to get insights from Hydraulic conductivity map for a relationship between t_95.
 
