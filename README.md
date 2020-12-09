@@ -48,50 +48,49 @@ Exploring different techniques to get insights from Hydraulic conductivity map f
 ```bash
 Model: "sequential"
 _________________________________________________________________
-Layer (type)                 Output Shape              Param #
+Layer (type)                 Output Shape              Param #   
 =================================================================
-conv2d (Conv2D)              (None, 50, 103, 16)       800
+conv2d (Conv2D)              (None, 50, 103, 16)       800       
 _________________________________________________________________
-batch_normalization (BatchNo (None, 50, 103, 16)       64
+max_pooling2d (MaxPooling2D) (None, 25, 51, 16)        0         
 _________________________________________________________________
-max_pooling2d (MaxPooling2D) (None, 25, 51, 16)        0
+conv2d_1 (Conv2D)            (None, 25, 51, 64)        50240     
 _________________________________________________________________
-conv2d_1 (Conv2D)            (None, 25, 51, 32)        25120
+max_pooling2d_1 (MaxPooling2 (None, 12, 25, 64)        0         
 _________________________________________________________________
-batch_normalization_1 (Batch (None, 25, 51, 32)        128
+conv2d_2 (Conv2D)            (None, 12, 25, 256)       409856    
 _________________________________________________________________
-max_pooling2d_1 (MaxPooling2 (None, 12, 25, 32)        0
+max_pooling2d_2 (MaxPooling2 (None, 6, 12, 256)        0         
 _________________________________________________________________
-conv2d_2 (Conv2D)            (None, 12, 25, 64)        100416
+flatten (Flatten)            (None, 18432)             0         
 _________________________________________________________________
-batch_normalization_2 (Batch (None, 12, 25, 64)        256
+dense (Dense)                (None, 256)               4718848   
 _________________________________________________________________
-max_pooling2d_2 (MaxPooling2 (None, 6, 12, 64)         0
+dropout (Dropout)            (None, 256)               0         
 _________________________________________________________________
-conv2d_3 (Conv2D)            (None, 6, 12, 128)        401536
+dense_1 (Dense)              (None, 256)               65792     
 _________________________________________________________________
-batch_normalization_3 (Batch (None, 6, 12, 128)        512
+dropout_1 (Dropout)          (None, 256)               0         
 _________________________________________________________________
-max_pooling2d_3 (MaxPooling2 (None, 3, 6, 128)         0
+dense_2 (Dense)              (None, 512)               131584    
 _________________________________________________________________
-conv2d_4 (Conv2D)            (None, 3, 6, 256)         819456
-_________________________________________________________________
-batch_normalization_4 (Batch (None, 3, 6, 256)         1024
-_________________________________________________________________
-max_pooling2d_4 (MaxPooling2 (None, 1, 3, 256)         0
-_________________________________________________________________
-flatten (Flatten)            (None, 768)               0
-_________________________________________________________________
-dense (Dense)                (None, 256)               196864
-_________________________________________________________________
-dense_1 (Dense)              (None, 256)               65792
-_________________________________________________________________
-dense_2 (Dense)              (None, 256)               65792
-_________________________________________________________________
-dense_3 (Dense)              (None, 1)                 257
+dense_3 (Dense)              (None, 1)                 513       
 =================================================================
-Total params: 1,678,017
-Trainable params: 1,677,025
-Non-trainable params: 992
+Total params: 5,377,633
+Trainable params: 5,377,633
+Non-trainable params: 0
 _________________________________________________________________
 ```
+
+## Results
+
+We ran the system for different permutations of dropout rate and batch size for a dataset breakdown of 60% 20% 20%. Below are the results,
+
+### Correleration
+![Correleration](raw/correlation.png) \
+
+### Actual v/s Predicted for best model
+![Actual v/s Predicted for best model](raw/comparisonActualPredictBatchBest.png) \
+
+### Correleration of Best model
+![Correleration of Best model](raw/correlationBatch50aD0.5.png) \
