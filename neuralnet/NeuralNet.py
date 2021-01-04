@@ -1,14 +1,19 @@
 """
 Author: Antariksh Narain
 Description: Setup a neural network to train data
+Design:
+-> Dropout 0.25, 0.5
+-> Check Train and Eval flag in predict
+-> conv layer 3 and 5.
+-> data [0.6, 0.2, 0.2]
 """
 
 from keras.models import Sequential
-from keras.layers import Dense, Conv2D, Flatten, MaxPooling2D, BatchNormalization
 from keras.utils import plot_model
 from keras.callbacks import ModelCheckpoint
 from Dataset import Dataset
-from VisualizeMap import Visualize
+from VisualizeMap import Visualize, VisualizeLayers
+from Utils import Utility
 
 import keras
 import tensorflow as tf
@@ -24,6 +29,7 @@ from datetime import datetime
 MODEL_PATH = "weights/"
 TRAINED_PATH = "model/"
 PERF_PATH = "performance/"
+LAYER_IMG = "layers/"
 
 class NeuralNet:
     def __init__(self, split=[70,20,10], filename="model"):
@@ -33,9 +39,12 @@ class NeuralNet:
             os.makedirs(TRAINED_PATH)
         if not os.path.exists(PERF_PATH):
             os.makedirs(PERF_PATH)
-        
+        if not os.path.exists(LAYER_IMG):
+            os.makedirs(LAYER_IMG)
+
         self.viz = Visualize()
         self.dataset = Dataset()
+        self.utility = Utility(filename)
         self.dataset.LoadData("Field_Serra*.csv", "list_t*.csv", split)
         self.filename = filename
 
@@ -78,7 +87,7 @@ class NeuralNet:
                 ct_n+=1
             else:
                 ct_0+=1
-        return ct_p, ct_n, ct_0
+        return ct_p, ct_n, ct_0, corr
     
     def _write_to_file(self, rows):
         f = open(PERF_PATH + self.filename + ".csv", "a")
@@ -87,102 +96,66 @@ class NeuralNet:
         f.close()
         print("Performance data written to CSV")
 
-    def BuildModel(self, mode=False):
+    def BuildModel(self, layers: list, loss_type='mean_squared_error', dropout=0.0):
         self.model = Sequential()
 
-        if mode: 
-            self.model.add(Conv2D(16, kernel_size=7, padding='same', strides=(2,2), activation='relu', input_shape=(100,205,1)))
-            self.model.add(BatchNormalization())
-            self.model.add(MaxPooling2D(strides=2))
+        for layer in layers:
+            self.model.add(layer)
 
-            self.model.add(Conv2D(32, kernel_size=7, padding='same', activation='relu'))
-            self.model.add(BatchNormalization())
-            self.model.add(MaxPooling2D(strides=2))
-            
-            self.model.add(Conv2D(64, kernel_size=7, padding='same', activation='relu'))
-            self.model.add(BatchNormalization())
-            self.model.add(MaxPooling2D(strides=2))
-            
-            self.model.add(Conv2D(128, kernel_size=7, padding='same', activation='relu'))
-            self.model.add(BatchNormalization())
-            self.model.add(MaxPooling2D(strides=2))
-
-            self.model.add(Conv2D(256, kernel_size=5, padding='same', activation='relu'))
-            self.model.add(BatchNormalization())
-            self.model.add(MaxPooling2D(strides=2))
-
-        else:
-            self.model.add(Conv2D(128, kernel_size=7, padding='same', strides=(2,2), activation='relu', input_shape=(100,205,1)))
-            self.model.add(BatchNormalization())
-            self.model.add(MaxPooling2D(strides=2))
-            self.model.add(Conv2D(256, kernel_size=5, padding='same', activation='relu'))
-            self.model.add(BatchNormalization())
-            self.model.add(MaxPooling2D(strides=2))
-
-        self.model.add(Flatten())
-        self.model.add(Dense(256, activation='relu'))
-        self.model.add(Dense(256, activation='relu'))
-        # self.model.add(Dense(256, activation='relu'))
-        self.model.add(Dense(512, activation='relu'))
-        self.model.add(Dense(1, activation='relu'))
-        #self.model.compile(loss='mean_squared_error', optimizer='adam')
-        self.model.compile(loss='mean_absolute_percentage_error', optimizer='adam')
+        self.model.compile(loss=loss_type, optimizer='adam')#, metrics=['accuracy'])
         self.model.summary()
-        plot_model(self.model, to_file="model.png")
-   
+        plot_model(self.model, to_file=self.filename + "_model.png")   
     
     def TrainModel(self, epochs, batch_size=10):
         x_train, y_train = self._get_data('train')
         x_val, y_val = self._get_data('val')
         x_test, y_test = self._get_data('test')
-        # self.viz.plot(x_train[1197,:,:,:])
-        # self.viz.save("map_1197.png")
         
-        checkpoint = ModelCheckpoint(MODEL_PATH + self.filename + ".hdf5", monitor='loss', verbose=1, save_best_only=True, mode='auto', period=5)
+        #checkpoint = ModelCheckpoint(MODEL_PATH + self.filename + ".hdf5", monitor='val_accuracy', verbose=1, save_best_only=True, mode='auto', period=10)
+        checkpoint = ModelCheckpoint(MODEL_PATH + self.filename + ".hdf5", monitor='loss', verbose=1, save_best_only=True, mode='auto', period=10)
+        self._write_to_file([["Train","Validation", "Test"]])
 
-        self.model.fit(x_train, y_train, epochs=epochs, batch_size=batch_size, verbose=1, validation_data=(x_val, y_val), callbacks=checkpoint)
-        
+        #history = self.model.fit(x_train, y_train, steps_per_epoch=int(x_train.shape[0]/epochs), epochs=epochs, batch_size=batch_size, verbose=0, validation_data=(x_val, y_val), callbacks=checkpoint)
+        self.model.fit(x_train, y_train, epochs=epochs, batch_size=batch_size, verbose=0, validation_data=(x_val, y_val), callbacks=checkpoint)
+
         print("\n\nEvaluating Models")
         accuracy = self._accuracy([x_train, x_val, x_test], [y_train, y_val, y_test])
-        print("Accuracy: Train->%.2f | Val->%.2f | Test->%.2f\n"%(accuracy[0], accuracy[1], accuracy[2]))
+        print(accuracy)
+
         print("\n\nPredictions")
         prediction = self._prediction([x_train, x_val, x_test], [y_train, y_val, y_test])
         predic1 = self._check_predictions(x_train, y_train)
         predic2 = self._check_predictions(x_val, y_val)
         predic3 = self._check_predictions(x_test, y_test)
-        #predic_str = "Train: " + str(predic1) + "\tVal: " +  str(predic2)  + "\tTest: " + str(predic3) + "\n"
-        #print(predic_str)
 
-        self._write_to_file([["Train","Validation", "Test"],accuracy, [predic1, predic2, predic3], ["Index","Actual", "Predicted"]])
-        # self._write_to_file(np.transpose([np.array(y_train.tolist()+y_val.tolist()+y_test.tolist()), 
-        #     np.array(prediction[0].tolist() + prediction[1].tolist() + prediction[2].tolist())]))
+        self.X = x_test
+
+        # acc = history.history['accuracy']
+        # val_acc = history.history['val_accuracy']
+        # loss = history.history['loss']
+        # val_loss = history.history['val_loss']
+        # tot_epochs = range(1, len(acc) + 1)
+        #self.utility.display_accuracy(tot_epochs, acc, val_acc)
+        #self.utility.display_loss(tot_epochs, loss, val_loss)
+        #self.utility.show_layers(self.model, x_test)
+        self._write_to_file([accuracy, [predic1, predic2, predic3]])
+
+        self._write_to_file([["Index", "Actual","Predicted"]])
+        # self._write_to_file(np.transpose([np.array(y_val.tolist()+y_test.tolist()), 
+        #     prediction[1].tolist() + prediction[2].tolist()]))
         self._write_to_file(np.transpose([
-            np.array(self.dataset.Train_seq + self.dataset.Val_seq + self.dataset.Test_seq),
-            np.array(y_train.tolist()+y_val.tolist()+y_test.tolist()), 
-            np.array(prediction[0].tolist() + prediction[1].tolist() + prediction[2].tolist())]))
+            np.array(self.dataset.Val_seq + self.dataset.Test_seq),
+            np.array(y_val.tolist()+y_test.tolist()), 
+            np.array(prediction[1].tolist() + prediction[2].tolist())]))
+        return [predic1, predic2, predic3]
 
     def save(self):
-        self.model.save(TRAINED_PATH + filename + ".hdf5")
+        self.model.save(TRAINED_PATH + self.filename + ".hdf5")
         print("Saved Model!")
 
-
-if __name__ == "__main__":
-    #dataset_perm = [[60,20,20],[70,20,10],[80,10,10],[85,10,5]]
-    #batch_size = [5,10,20,50]
-    dataset_perm = [[60,20,20]]
-    batch_size = [20]
-    modes =[True, False]
-    for dp in dataset_perm:
-        for batchsize in batch_size:
-            for mode in modes:
-                filename = str(datetime.now()) + "_"+ str(mode) + "_".join([str(t) for t in dp]) + "_Batch_" + str(batchsize)
-                nn = NeuralNet(dp, filename)
-                nn.BuildModel(mode)
-                print("===========1================")
-                nn.TrainModel(epochs=20,batch_size=batchsize)
-                print("===========2================")
-                nn.TrainModel(epochs=20,batch_size=batchsize)
-                print("===========3================")
-                nn.TrainModel(epochs=20,batch_size=batchsize)
-                nn.save()
-                del nn
+    def load(self):
+        self.model.load_weights(MODEL_PATH + self.filename + ".hdf5")
+    
+    def visualize(self, data_index = 0, save=False):
+        vl = VisualizeLayers()
+        vl.visualize(self.model, self.X, save_image=save, path=LAYER_IMG)

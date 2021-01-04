@@ -5,6 +5,7 @@ from matplotlib import cm
 import seaborn as sns
 import matplotlib.pylab as plt
 
+from keract import get_activations, display_activations
 
 class Visualize:
     def __init__(self):
@@ -18,3 +19,13 @@ class Visualize:
     
     def save(self, filename="map.png"):    
         plt.savefig(filename)
+
+class VisualizeLayers:
+    def __init__(self):
+        pass
+
+    def visualize(self, model,layer_input,save_image=False, path='.'):
+        keract_inputs = layer_input[:1]
+        activations = get_activations(model, keract_inputs)
+        display_activations(activations, save=save_image, directory=path,cmap='icefire_r')
+        
