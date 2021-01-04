@@ -94,3 +94,11 @@ We ran the system for different permutations of dropout rate and batch size for 
 
 ### Correleration of Best model
 ![Correleration of Best model](raw/correlationBatch50aD0.5.png) \
+
+---
+
+**Credits**
+
+1. Antariksh Narain *Computer Science Graduate Student, USC*
+2. Maria Morvillo *Environmental Engineering PhD. Student, USC*
+3. Alessandra Bonazzi *Environmental Engineering PhD. Student, USC*

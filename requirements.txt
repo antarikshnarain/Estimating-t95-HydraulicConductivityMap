@@ -1,0 +1,7 @@
+numpy
+tensorflow-gpu
+keras
+matplotlib
+PIL
+seaborn
+keract
