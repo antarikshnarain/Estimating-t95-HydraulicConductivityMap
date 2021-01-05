@@ -56,6 +56,8 @@ class Dataset:
             exit(-1)
         return (self.X[:,self.indexes], self.Y[self.indexes,1], len(self.indexes))
     
+    def CustomBatch(self, records: list):
+        return (self.X[:,records], self.Y[records,1], len(records))
 
 if __name__ == "__main__":
     dt = Dataset()

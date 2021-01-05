@@ -60,6 +60,13 @@ class NeuralNet:
         x = x.reshape((size, 100, 205, 1))
         y = y.reshape((size,))
         return x,y
+    
+    def _get_specific_records(self, lst:list):
+        x, y, size = self.dataset.CustomBatch(lst)
+        x = self._processX(x, size)
+        x = x.reshape((size, 100, 205, 1))
+        y = y.reshape((size,))
+        return x,y
 
     def _accuracy(self, lst_X: list(), lst_Y: list()):
         assert(len(lst_X) == len(lst_Y))
@@ -156,6 +163,10 @@ class NeuralNet:
     def load(self):
         self.model.load_weights(MODEL_PATH + self.filename + ".hdf5")
     
-    def visualize(self, data_index = 0, save=False):
+    def visualize(self, data_indexs: list, save=False):
         vl = VisualizeLayers()
-        vl.visualize(self.model, self.X, save_image=save, path=LAYER_IMG)
+        for index in data_indexs:
+            datas,_ = self._get_specific_records([index])
+            if not os.path.exists(LAYER_IMG + str(index)):
+                os.makedirs(LAYER_IMG + str(index))
+            vl.visualize(self.model, datas, save_image=save, path=LAYER_IMG + str(index))
