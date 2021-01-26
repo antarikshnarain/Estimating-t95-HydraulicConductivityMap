@@ -19,6 +19,8 @@ layers =[
         Flatten(),
         Dense(256, activation='relu'),
         Dropout(dropout),
+        Dense(512, activation='relu'),
+        Dropout(dropout),
         Dense(256, activation='relu'),
         Dropout(dropout),
         Dense(512, activation='relu'),
@@ -32,7 +34,7 @@ if __name__ == "__main__":
     dataset_perm = [[60,20,20]]
     #loss_types = ['mean_squared_error', 'mean_absolute_percentage_error']
     loss_types = ['mean_squared_error']
-    #loss_types = ['mean_absolute_percentage_error']
+    #oss_types = ['mean_absolute_percentage_error']
     #dropouts = [0.25, 0.5]
     dropouts = [0.5]
     for dp in dataset_perm:
@@ -42,8 +44,10 @@ if __name__ == "__main__":
                     filename = str(datetime.now()) + "_Batch_" + str(batchsize) + "_Loss_" + str(loss_type) + "_D_" + str(dropout)
                     nn = NeuralNet(dp, filename)
                     nn.BuildModel(layers, loss_type=loss_types, dropout=dropout)
-                    results = nn.TrainModel(epochs=300,batch_size=batchsize)
-                    nn.visualize([1197,2017],save=True)
+                    results = nn.TrainModel(epochs=30,batch_size=batchsize)
+                    #nn.visualize([0,1,2,5,6,51, 1346, 1764, 1787, 1197, 2017],save=True)
+                    nn.predict([0,1,2,5,6,51, 1346, 1764, 1787, 1197, 2017])
+                    #nn.visualize([1197, 2017],save=True)
                     print("=====Performance=====")
                     print("Batch ", batch_size, " Loss ", loss_type, " Dropout ", dropout)
                     print(results)

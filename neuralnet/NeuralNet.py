@@ -51,7 +51,7 @@ class NeuralNet:
     def _processX(self, X, count):
         new_X = []
         for _ in range(count):
-            new_X.append(X[:,_].reshape(100,205))
+            new_X.append(np.flip(X[:,_].reshape(100,205),axis=0))
         return np.array(new_X)
     
     def _get_data(self, data_type):
@@ -75,6 +75,8 @@ class NeuralNet:
 
     def _prediction(self, lst_X: list, lst_Y: list):
         assert(len(lst_X) == len(lst_Y))
+        # y_p = self.model.predict(lst_X)
+        # y_p = y_p.reshape(y_p.shape[0],)
         y_predic = [self.model.predict(x).reshape(y.shape[0],) for x,y in zip(lst_X, lst_Y)]
         return y_predic
 
@@ -170,3 +172,8 @@ class NeuralNet:
             if not os.path.exists(LAYER_IMG + str(index)):
                 os.makedirs(LAYER_IMG + str(index))
             vl.visualize(self.model, datas, save_image=save, path=LAYER_IMG + str(index))
+    
+    def predict(self, data_indexs: list):
+        X,Y = self._get_specific_records(data_indexs)
+        y_p = self.model.predict(X)
+        print(self._prediction(X, Y))
