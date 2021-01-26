@@ -13,7 +13,7 @@ from keras.layers import Dense, Conv2D, Flatten, MaxPooling2D, BatchNormalizatio
 from keras.utils import plot_model
 from keras.callbacks import ModelCheckpoint
 from Dataset import Dataset
-from VisualizeMap import Visualize
+from VisualizeMap import Visualize, VisualizeLayers
 
 import keras
 import tensorflow as tf
@@ -29,6 +29,8 @@ from datetime import datetime
 MODEL_PATH = "weights/"
 TRAINED_PATH = "model/"
 PERF_PATH = "performance/"
+LAYER_IMG = "layers/"
+
 
 class NeuralNet:
     def __init__(self, split=[70,20,10], filename="model"):
@@ -52,6 +54,13 @@ class NeuralNet:
     
     def _get_data(self, data_type):
         x, y, size = self.dataset.MiniBatch(data_type)
+        x = self._processX(x, size)
+        x = x.reshape((size, 100, 205, 1))
+        y = y.reshape((size,))
+        return x,y
+    
+    def _get_specific_records(self, lst:list):
+        x, y, size = self.dataset.CustomBatch(lst)
         x = self._processX(x, size)
         x = x.reshape((size, 100, 205, 1))
         y = y.reshape((size,))
@@ -91,6 +100,13 @@ class NeuralNet:
         cc.writerows(rows)
         f.close()
         print("Performance data written to CSV")
+    
+    def _write_to_file2(self, rows):
+        f = open(PERF_PATH + self.filename + "_Custom.csv", "a")
+        cc = csv.writer(f)
+        cc.writerows(rows)
+        f.close()
+        print("Custom Performance data written to CSV")
 
     def BuildModel(self, loss_type='mean_squared_error', dropout=0.0):
         self.model = Sequential()
@@ -107,9 +123,9 @@ class NeuralNet:
         #self.model.add(BatchNormalization())
         self.model.add(MaxPooling2D(strides=2))
         
-        # self.model.add(Conv2D(128, kernel_size=7, padding='same', activation='relu'))
+        self.model.add(Conv2D(128, kernel_size=7, padding='same', activation='relu'))
         # #self.model.add(BatchNormalization())
-        # self.model.add(MaxPooling2D(strides=2))
+        self.model.add(MaxPooling2D(strides=2))
 
         self.model.add(Conv2D(256, kernel_size=5, padding='same', activation='relu'))
         #self.model.add(BatchNormalization())
@@ -165,10 +181,9 @@ class NeuralNet:
                     print("Breaking Early!", old_predic, predic2[3])
                     break
                 ctr += 1
-                #old_predic = predic2[3]
+        
+        ## Store all records data to file
         self._write_to_file([["Index", "Actual","Predicted"]])
-        # self._write_to_file(np.transpose([np.array(y_val.tolist()+y_test.tolist()), 
-        #     prediction[1].tolist() + prediction[2].tolist()]))
         self._write_to_file(np.transpose([
             np.array(self.dataset.Val_seq + self.dataset.Test_seq),
             np.array(y_val.tolist()+y_test.tolist()), 
@@ -179,14 +194,32 @@ class NeuralNet:
         self.model.save(TRAINED_PATH + filename + ".hdf5")
         print("Saved Model!")
 
+    def visualize(self, data_indexs: list, save=False):
+        vl = VisualizeLayers()
+        for index in data_indexs:
+            datas,_ = self._get_specific_records([index])
+            if not os.path.exists(LAYER_IMG + str(index)):
+                os.makedirs(LAYER_IMG + str(index))
+            vl.visualize(self.model, datas, save_image=save, path=LAYER_IMG + str(index))
+
+    def predict(self, data_indexs: list):
+        X,Y = self._get_specific_records(data_indexs)
+        y_p = self.model.predict(X)
+        y_p = y_p.reshape(y_p.shape[0],)
+        self._write_to_file2([["Index", "Actual","Predicted"]])
+        self._write_to_file2(np.transpose([np.array(data_indexs), Y, y_p]))
+        print([np.array(data_indexs), Y, y_p])
+
 
 if __name__ == "__main__":
     #dataset_perm = [[60,20,20],[70,20,10],[80,10,10],[85,10,5]]
-    batch_size = [5,20,50]
     dataset_perm = [[60,20,20]]
-    loss_types = ['mean_squared_error', 'mean_absolute_percentage_error']
-    #loss_types = ['mean_absolute_percentage_error']
-    dropouts = [0.25, 0.5]
+    #batch_size = [5,20,50]
+    batch_size = [50]
+    #loss_types = ['mean_squared_error', 'mean_absolute_percentage_error']
+    loss_types = ['mean_squared_error']
+    #dropouts = [0.25, 0.5]
+    dropouts = [0.5]
     for dp in dataset_perm:
         for batchsize in batch_size:
             for loss_type in loss_types:
@@ -194,7 +227,9 @@ if __name__ == "__main__":
                     filename = str(datetime.now()) + "_Batch_" + str(batchsize) + "_Loss_" + str(loss_type) + "_D_" + str(dropout)
                     nn = NeuralNet(dp, filename)
                     nn.BuildModel(loss_type=loss_types, dropout=dropout)
-                    results = nn.TrainModel(epochs=200,batch_size=batchsize,max_iteration=20)
+                    results = nn.TrainModel(epochs=200,batch_size=batchsize,max_iteration=10)
+                    nn.predict([0,1,2,5,6,51, 1346, 1764, 1787, 1197, 2017])
+                    nn.visualize([0,1,2,5,6,51, 1346, 1764, 1787, 1197, 2017],save=True)
                     print("=====Performance=====")
                     print("Batch ", batch_size, " Loss ", loss_type, " Dropout ", dropout)
                     print(results)

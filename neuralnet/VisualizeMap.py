@@ -26,7 +26,8 @@ class VisualizeLayers:
 
     def visualize(self, model,layer_input,save_image=False, path='.'):
         #keract_inputs = layer_input[:1]
+        #keract_inputs = ((layer_input - np.min(layer_input))/ (np.max(layer_input) - np.min(layer_input)) ) + 0.5
         keract_inputs = layer_input
         activations = get_activations(model, keract_inputs)
-        display_activations(activations, save=save_image, directory=path,cmap='icefire_r')
+        display_activations(activations, save=save_image, directory=path,cmap='jet')
         
