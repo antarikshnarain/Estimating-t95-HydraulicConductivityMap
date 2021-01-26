@@ -10,5 +10,8 @@ train-nn3: neuralnet/NeuralNet3.py neuralnet/Dataset.py
 train-nn4: neuralnet/NeuralNet4.py neuralnet/Dataset.py
 	python3 neuralnet/NeuralNet4.py
 
+train: neuralnet/NeuralNet.py neuralnet/Dataset.py neuralnet/Main.py
+	python3 neuralnet/Main.py
+
 clean:
-	rm -r model/* performance/* weights/*
+	rm -r model/* performance/* weights/* layers/*

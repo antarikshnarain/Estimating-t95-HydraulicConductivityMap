@@ -4,3 +4,4 @@ neuralnet/__pycache__/*
 model/*
 weights/*
 performance/*
+layers/*
